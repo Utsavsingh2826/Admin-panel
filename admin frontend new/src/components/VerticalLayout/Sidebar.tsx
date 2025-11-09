@@ -86,8 +86,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
       label: 'Settings',
       icon: 'fas fa-cog',
       path: '/settings'
+    },
+    {
+      id: 'users',
+      label: 'Users',
+      icon: 'fas fa-user-shield',
+      path: '/users'
     }
-  ];
+  ].filter(item => {
+    // Only show Users menu for superadmin users
+    if (item.id === 'users' && user?.role !== 'superadmin') {
+      return false;
+    }
+    return true;
+  });
 
   const getBadgeColorClass = (color?: string) => {
     switch (color) {

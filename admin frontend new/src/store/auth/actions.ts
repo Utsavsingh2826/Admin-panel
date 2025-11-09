@@ -123,7 +123,7 @@ export const logout = () => {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   return {
-    type: LOGOUT as typeof LOGOUT
+  type: LOGOUT as typeof LOGOUT
   };
 };
 

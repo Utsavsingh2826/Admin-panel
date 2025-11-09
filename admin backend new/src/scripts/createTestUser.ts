@@ -1,5 +1,4 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import User from '../models/User';
 
@@ -18,13 +17,11 @@ const createTestUser = async () => {
       process.exit(0);
     }
 
-    // Create test user
-    const hashedPassword = await bcrypt.hash('admin123', 12);
-    
-    const user = await User.create({
+    // Create test user (password will be hashed by pre-save middleware)
+    await User.create({
       name: 'Admin User',
       email: 'admin@jewelry.com',
-      password: hashedPassword,
+      password: 'admin123',
       role: 'admin',
       isActive: true,
       isLocked: false,

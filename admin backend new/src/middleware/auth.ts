@@ -4,7 +4,7 @@ import User from '../models/User';
 import { ErrorResponse } from '../utils/errorResponse';
 import { AuthRequest, JwtPayload } from '../types';
 
-export const protect = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+export const protect = async (req: AuthRequest, _res: Response, next: NextFunction): Promise<void> => {
   let token: string | undefined;
 
   // Check for token in headers
