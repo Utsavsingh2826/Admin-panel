@@ -6,6 +6,9 @@ import { combineReducers } from 'redux';
 
 // Import reducers
 import authReducer from './auth/reducer';
+import { usersReducer } from './users/reducer';
+import { promoCodesReducer } from './promocodes/reducer';
+import { metalPricesReducer } from './metalPrices/reducer';
 
 // Persist config
 const persistConfig = {
@@ -16,7 +19,10 @@ const persistConfig = {
 
 // Root reducer
 const rootReducer = combineReducers({
-  auth: authReducer
+  auth: authReducer,
+  users: usersReducer,
+  promoCodes: promoCodesReducer,
+  metalPrices: metalPricesReducer,
 });
 
 // Persisted reducer
