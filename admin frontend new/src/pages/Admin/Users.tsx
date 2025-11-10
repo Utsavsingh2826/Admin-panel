@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import {
@@ -15,6 +15,13 @@ import {
   ResetPasswordData,
 } from '../../store/users/actions';
 import { toast } from 'react-toastify';
+
+const roleStyleMap: Record<User['role'], string> = {
+  superadmin: 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-200',
+  admin: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200',
+  manager: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200',
+  staff: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200',
+};
 
 const Users: React.FC = () => {
   const dispatch = useDispatch();
@@ -224,239 +231,236 @@ const Users: React.FC = () => {
     return user.isLocked || (user.lockUntil && new Date(user.lockUntil) > new Date());
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'superadmin':
-        return 'bg-purple-100 text-purple-800';
-      case 'admin':
-        return 'bg-blue-100 text-blue-800';
-      case 'manager':
-        return 'bg-green-100 text-green-800';
-      case 'staff':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusBadge = (user: User) => {
+  const renderStatusBadge = (user: User) => {
     const locked = isUserLocked(user);
     if (user.isActive && !locked) {
-      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>;
-    } else if (user.isActive && locked) {
-      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">Active (Locked)</span>;
-    } else if (!user.isActive && locked) {
-      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Inactive (Locked)</span>;
-    } else {
-      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Inactive</span>;
+      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200';
     }
+    if (user.isActive && locked) {
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200';
+    }
+    if (!user.isActive && locked) {
+      return 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200';
+    }
+    return 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-200';
   };
 
+  const summaryCards = useMemo(
+    () => [
+      { label: 'Total Users', value: total, icon: 'fas fa-users', accent: 'from-teal-500 to-emerald-500' },
+      { label: 'Active', value: users.filter((u) => u.isActive).length, icon: 'fas fa-user-check', accent: 'from-blue-500 to-indigo-500' },
+      { label: 'Locked', value: users.filter((u) => isUserLocked(u)).length, icon: 'fas fa-user-lock', accent: 'from-amber-500 to-orange-500' },
+      { label: 'New This Page', value: users.length, icon: 'fas fa-user-plus', accent: 'from-violet-500 to-purple-500' },
+    ],
+    [total, users]
+  );
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Users Management</h2>
+    <div className="space-y-8">
+      <header className="flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-sm transition dark:border-slate-800/80 dark:bg-slate-900/80 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.4em] text-teal-600 dark:text-teal-300">User Directory</p>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">Users Management</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Maintain access controls, reset credentials, and oversee your organization&apos;s team activity.
+          </p>
+        </div>
         <button
           onClick={() => handleOpenModal()}
-          className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors flex items-center"
+          className="flex items-center justify-center rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700 dark:hover:bg-teal-500"
         >
-          <i className="fas fa-plus mr-2"></i>
+          <i className="fas fa-user-plus mr-2"></i>
           Add User
         </button>
-      </div>
+      </header>
 
-      {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search by name or email..."
-            value={searchTerm}
-            onChange={handleSearch}
-            className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-          />
-          <i className="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-        </div>
-        <select
-          value={statusFilter}
-          onChange={handleStatusFilter}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-        >
-          <option value="">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="locked">Locked</option>
-        </select>
-        <select
-          value={roleFilter}
-          onChange={handleRoleFilter}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-        >
-          <option value="">All Roles</option>
-          <option value="superadmin">Superadmin</option>
-          <option value="admin">Admin</option>
-          <option value="manager">Manager</option>
-          <option value="staff">Staff</option>
-        </select>
-        <div className="flex items-center text-sm text-gray-600">
-          Total: <span className="font-semibold ml-1">{total}</span>
-        </div>
-      </div>
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {summaryCards.map((card) => (
+          <div
+            key={card.label}
+            className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/90 p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-800/70 dark:bg-slate-900/70"
+          >
+            <div className={`absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br ${card.accent} opacity-30 blur-2xl`} />
+            <div className="relative flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{card.label}</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-slate-100">{card.value}</p>
+              </div>
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800/70 dark:text-slate-200">
+                <i className={`${card.icon}`}></i>
+              </span>
+            </div>
+          </div>
+        ))}
+      </section>
 
-      {/* Users Table */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <section className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-sm transition dark:border-slate-800/80 dark:bg-slate-900/80">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search by name or email"
+              value={searchTerm}
+              onChange={handleSearch}
+              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 pl-11 text-sm text-slate-700 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            />
+            <i className="fas fa-search absolute left-4 top-2.5 text-slate-400 dark:text-slate-500"></i>
+          </div>
+          <select
+            value={statusFilter}
+            onChange={handleStatusFilter}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          >
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="locked">Locked</option>
+          </select>
+          <select
+            value={roleFilter}
+            onChange={handleRoleFilter}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          >
+            <option value="">All Roles</option>
+            <option value="superadmin">Superadmin</option>
+            <option value="admin">Admin</option>
+            <option value="manager">Manager</option>
+            <option value="staff">Staff</option>
+          </select>
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <span>Total Records</span>
+            <span className="text-lg font-semibold text-slate-900 dark:text-slate-100">{total}</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-sm transition hover:shadow-lg dark:border-slate-800/80 dark:bg-slate-900/80">
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto"></div>
-            <p className="mt-2 text-gray-600">Loading users...</p>
+          <div className="px-6 py-16 text-center text-slate-500 dark:text-slate-400">
+            <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-teal-500 border-t-transparent"></div>
+            <p className="mt-3 text-sm">Loading users…</p>
           </div>
         ) : error ? (
-          <div className="p-8 text-center text-red-600">{error}</div>
+          <div className="px-6 py-16 text-center text-rose-500">{error}</div>
         ) : (
           <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="overflow-x-auto no-scrollbar">
+              <table className="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-800">
+                <thead className="bg-slate-50 text-left uppercase tracking-wider text-xs font-semibold text-slate-500 dark:bg-slate-900/90 dark:text-slate-400">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Role
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Security
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Last Login
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    <th className="px-6 py-3">User</th>
+                    <th className="px-6 py-3">Email</th>
+                    <th className="px-6 py-3">Role</th>
+                    <th className="px-6 py-3">Status</th>
+                    <th className="px-6 py-3">Security</th>
+                    <th className="px-6 py-3">Last Login</th>
+                    <th className="px-6 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                   {users.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                        No users found
+                      <td colSpan={7} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                        No users found for the selected filters.
                       </td>
                     </tr>
                   ) : (
-                    users.map((user) => (
-                      <tr key={user._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center">
-                                <i className="fas fa-user text-teal-600"></i>
-                              </div>
+                    users.map((userItem) => (
+                      <tr key={userItem._id} className="transition hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-500/10 text-teal-600 dark:bg-teal-500/15 dark:text-teal-200">
+                              <i className="fas fa-user"></i>
                             </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                            <div>
+                              <p className="font-semibold text-slate-900 dark:text-slate-100">{userItem.name}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">ID: {userItem._id.slice(-6)}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{user.email}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeColor(
-                              user.role
-                            )}`}
-                          >
-                            {user.role}
+                        <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{userItem.email}</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${roleStyleMap[userItem.role]}`}>
+                            <i className="fas fa-id-badge"></i>
+                            {userItem.role}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            {getStatusBadge(user)}
-                            {currentUser?._id !== user._id && (
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${renderStatusBadge(userItem)}`}>
+                              {userItem.isActive ? (isUserLocked(userItem) ? 'Active · Locked' : 'Active') : isUserLocked(userItem) ? 'Inactive · Locked' : 'Inactive'}
+                            </span>
+                            {currentUser?._id !== userItem._id && (
                               <button
-                                onClick={() => handleToggleStatus(user._id, user.isActive)}
-                                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
-                                  user.isActive ? 'bg-teal-600' : 'bg-gray-200'
+                                onClick={() => handleToggleStatus(userItem._id, userItem.isActive)}
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full border transition ${
+                                  userItem.isActive
+                                    ? 'border-teal-500 bg-teal-500/80'
+                                    : 'border-slate-300 bg-slate-200 dark:border-slate-600 dark:bg-slate-700'
                                 }`}
                               >
                                 <span
-                                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                    user.isActive ? 'translate-x-5' : 'translate-x-0'
+                                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${
+                                    userItem.isActive ? 'translate-x-[22px]' : 'translate-x-1'
                                   }`}
                                 />
                               </button>
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm">
-                            {isUserLocked(user) ? (
-                              <div className="flex items-center space-x-2">
-                                <span className="text-red-600">
-                                  <i className="fas fa-lock mr-1"></i>Locked
-                                </span>
-                                {currentUser?._id !== user._id && (
-                                  <button
-                                    onClick={() => handleUnlock(user._id)}
-                                    className="text-teal-600 hover:text-teal-800 text-xs"
-                                  >
-                                    Unlock
-                                  </button>
-                                )}
-                              </div>
+                        <td className="px-6 py-4">
+                          <div className="space-y-1 text-xs">
+                            {isUserLocked(userItem) ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-3 py-1 font-semibold text-rose-600 dark:bg-rose-500/20 dark:text-rose-200">
+                                <i className="fas fa-lock"></i> Locked
+                              </span>
                             ) : (
-                              <span className="text-green-600">
-                                <i className="fas fa-unlock mr-1"></i>Unlocked
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200">
+                                <i className="fas fa-unlock"></i> Secure
                               </span>
                             )}
-                            {user.loginAttempts > 0 && (
-                              <div className="text-xs text-gray-500 mt-1">
-                                Attempts: {user.loginAttempts}
-                              </div>
+                            {userItem.loginAttempts > 0 && (
+                              <p className="text-slate-500 dark:text-slate-400">Attempts: {userItem.loginAttempts}</p>
+                            )}
+                            {currentUser?._id !== userItem._id && isUserLocked(userItem) && (
+                              <button
+                                onClick={() => handleUnlock(userItem._id)}
+                                className="text-xs font-semibold text-teal-600 hover:text-teal-500 dark:text-teal-300"
+                              >
+                                Unlock account
+                              </button>
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {user.lastLogin
-                            ? new Date(user.lastLogin).toLocaleDateString()
-                            : 'Never'}
+                        <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
+                          {userItem.lastLogin ? new Date(userItem.lastLogin).toLocaleDateString() : 'Never'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-2">
+                        <td className="px-6 py-4">
+                          <div className="flex justify-end gap-2">
                             <button
-                              onClick={() => handleOpenDetailsModal(user)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="View Details"
+                              onClick={() => handleOpenDetailsModal(userItem)}
+                              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-teal-500 hover:text-teal-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-teal-400 dark:hover:text-teal-200"
                             >
-                              <i className="fas fa-eye"></i>
+                              View
                             </button>
                             <button
-                              onClick={() => handleOpenModal(user)}
-                              className="text-teal-600 hover:text-teal-900"
-                              title="Edit"
+                              onClick={() => handleOpenModal(userItem)}
+                              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-blue-500 hover:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-blue-400 dark:hover:text-blue-200"
                             >
-                              <i className="fas fa-edit"></i>
+                              Edit
                             </button>
                             <button
-                              onClick={() => handleOpenResetPasswordModal(user)}
-                              className="text-yellow-600 hover:text-yellow-900"
-                              title="Reset Password"
+                              onClick={() => handleOpenResetPasswordModal(userItem)}
+                              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-amber-500 hover:text-amber-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-amber-400 dark:hover:text-amber-200"
                             >
-                              <i className="fas fa-key"></i>
+                              Reset
                             </button>
-                            {currentUser?._id !== user._id && (
+                            {currentUser?._id !== userItem._id && (
                               <button
-                                onClick={() => handleDelete(user._id)}
-                                className="text-red-600 hover:text-red-900"
-                                title="Delete"
+                                onClick={() => handleDelete(userItem._id)}
+                                className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:border-rose-500 hover:text-rose-700 dark:border-slate-700 dark:hover:border-rose-400"
                               >
-                                <i className="fas fa-trash"></i>
+                                Delete
                               </button>
                             )}
                           </div>
@@ -468,121 +472,95 @@ const Users: React.FC = () => {
               </table>
             </div>
 
-            {/* Pagination */}
             {pages > 1 && (
-              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                <div className="flex-1 flex justify-between sm:hidden">
+              <div className="flex flex-col gap-4 border-t border-slate-200/80 px-6 py-4 text-sm text-slate-600 dark:border-slate-800/70 dark:text-slate-400 md:flex-row md:items-center md:justify-between">
+                <p>
+                  Showing{' '}
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">{(currentPage - 1) * 10 + 1}</span>–
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">{Math.min(currentPage * 10, total)}</span> of{' '}
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">{total}</span>
+                </p>
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-teal-500 hover:text-teal-600 disabled:opacity-40 dark:border-slate-700 dark:hover:border-teal-400 dark:hover:text-teal-200"
                   >
                     Previous
                   </button>
+                  {[...Array(Math.min(pages, 5))].map((_, index) => {
+                    let pageNum;
+                    if (pages <= 5) {
+                      pageNum = index + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = index + 1;
+                    } else if (currentPage >= pages - 2) {
+                      pageNum = pages - 4 + index;
+                    } else {
+                      pageNum = currentPage - 2 + index;
+                    }
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition ${
+                          currentPage === pageNum
+                            ? 'border-teal-500 bg-teal-50 text-teal-600 dark:border-teal-400 dark:bg-teal-500/20 dark:text-teal-200'
+                            : 'border-slate-200 text-slate-500 hover:border-teal-500 hover:text-teal-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-teal-400 dark:hover:text-teal-200'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
                   <button
                     onClick={() => setCurrentPage((p) => Math.min(pages, p + 1))}
                     disabled={currentPage === pages}
-                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                    className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-teal-500 hover:text-teal-600 disabled:opacity-40 dark:border-slate-700 dark:hover:border-teal-400 dark:hover:text-teal-200"
                   >
                     Next
                   </button>
-                </div>
-                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Showing <span className="font-medium">{(currentPage - 1) * 10 + 1}</span> to{' '}
-                      <span className="font-medium">{Math.min(currentPage * 10, total)}</span> of{' '}
-                      <span className="font-medium">{total}</span> results
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                      <button
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                      >
-                        <i className="fas fa-chevron-left"></i>
-                      </button>
-                      {[...Array(Math.min(pages, 5))].map((_, i) => {
-                        let pageNum;
-                        if (pages <= 5) {
-                          pageNum = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNum = i + 1;
-                        } else if (currentPage >= pages - 2) {
-                          pageNum = pages - 4 + i;
-                        } else {
-                          pageNum = currentPage - 2 + i;
-                        }
-                        return (
-                          <button
-                            key={pageNum}
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                              currentPage === pageNum
-                                ? 'z-10 bg-teal-50 border-teal-500 text-teal-600'
-                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        );
-                      })}
-                      <button
-                        onClick={() => setCurrentPage((p) => Math.min(pages, p + 1))}
-                        disabled={currentPage === pages}
-                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-                      >
-                        <i className="fas fa-chevron-right"></i>
-                      </button>
-                    </nav>
-                  </div>
                 </div>
               </div>
             )}
           </>
         )}
-      </div>
+      </section>
 
-      {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur">
+          <div className="no-scrollbar max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200/70 bg-white/95 shadow-xl dark:border-slate-700 dark:bg-slate-900/95">
+            <div className="flex items-center justify-between border-b border-slate-200/70 px-6 py-4 dark:border-slate-800/60">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 {editingUser ? 'Edit User' : 'Create New User'}
               </h3>
-              <button
-                onClick={handleCloseModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
+              <button onClick={handleCloseModal} className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
                 <i className="fas fa-times"></i>
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="px-6 py-4">
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
+            <form onSubmit={handleSubmit} className="space-y-5 px-6 py-5">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Name</label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Email</label>
                 <input
                   type="email"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                   Password {editingUser && '(leave blank to keep current)'}
                 </label>
                 <input
@@ -590,15 +568,15 @@ const Users: React.FC = () => {
                   required={!editingUser}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Role</label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="staff">Staff</option>
                   <option value="manager">Manager</option>
@@ -606,30 +584,23 @@ const Users: React.FC = () => {
                   <option value="superadmin">Superadmin</option>
                 </select>
               </div>
-              <div className="mb-4">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formData.isActive}
-                    onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="mr-2"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Active</span>
-                </label>
-              </div>
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <label className="flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-teal-500 dark:border-slate-700 dark:text-slate-300 dark:hover:border-teal-400">
+                <input type="checkbox" checked={formData.isActive} onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })} />
+                Active user
+              </label>
+              <div className="flex justify-end gap-3 border-t border-slate-200/70 pt-4 dark:border-slate-800/70">
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-700 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                  className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700 dark:hover:bg-teal-500"
                 >
-                  {editingUser ? 'Update' : 'Create'}
+                  {editingUser ? 'Update User' : 'Create User'}
                 </button>
               </div>
             </form>
@@ -637,81 +608,58 @@ const Users: React.FC = () => {
         </div>
       )}
 
-      {/* View Details Modal */}
       {showDetailsModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">User Details</h3>
-              <button
-                onClick={handleCloseDetailsModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur">
+          <div className="no-scrollbar max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-slate-200/70 bg-white/95 shadow-xl dark:border-slate-700 dark:bg-slate-900/95">
+            <div className="flex items-center justify-between border-b border-slate-200/70 px-6 py-4 dark:border-slate-800/70">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">User Details</h3>
+              <button onClick={handleCloseDetailsModal} className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
                 <i className="fas fa-times"></i>
               </button>
             </div>
-            <div className="px-6 py-4 space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-500">Name</label>
-                <p className="text-gray-900 mt-1">{selectedUser.name}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Email</label>
-                <p className="text-gray-900 mt-1">{selectedUser.email}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Role</label>
-                <p className="mt-1">
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(selectedUser.role)}`}>
+            <div className="space-y-4 px-6 py-5 text-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Name</p>
+                  <p className="mt-1 font-semibold text-slate-900 dark:text-slate-100">{selectedUser.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Email</p>
+                  <p className="mt-1 text-slate-700 dark:text-slate-300">{selectedUser.email}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Role</p>
+                  <span className={`mt-1 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${roleStyleMap[selectedUser.role]}`}>
+                    <i className="fas fa-id-card"></i>
                     {selectedUser.role}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Status</p>
+                  <span className={`mt-1 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${renderStatusBadge(selectedUser)}`}>
+                    {selectedUser.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+              <div className="rounded-xl bg-slate-50/70 p-4 text-xs text-slate-500 dark:bg-slate-800/70 dark:text-slate-300">
+                <p>
+                  Last login:{' '}
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">
+                    {selectedUser.lastLogin ? new Date(selectedUser.lastLogin).toLocaleString() : 'Never'}
+                  </span>
+                </p>
+                <p className="mt-1">
+                  Created:{' '}
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">
+                    {selectedUser.createdAt ? new Date(selectedUser.createdAt).toLocaleString() : 'N/A'}
                   </span>
                 </p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Status</label>
-                <p className="mt-1">{getStatusBadge(selectedUser)}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Security Status</label>
-                <p className="mt-1">
-                  {isUserLocked(selectedUser) ? (
-                    <span className="text-red-600">
-                      <i className="fas fa-lock mr-1"></i>Locked
-                      {selectedUser.lockUntil && (
-                        <span className="text-xs text-gray-500 ml-2">
-                          Until: {new Date(selectedUser.lockUntil).toLocaleString()}
-                        </span>
-                      )}
-                    </span>
-                  ) : (
-                    <span className="text-green-600">
-                      <i className="fas fa-unlock mr-1"></i>Unlocked
-                    </span>
-                  )}
-                </p>
-                <p className="text-sm text-gray-600 mt-1">Login Attempts: {selectedUser.loginAttempts || 0}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Last Login</label>
-                <p className="text-gray-900 mt-1">
-                  {selectedUser.lastLogin
-                    ? new Date(selectedUser.lastLogin).toLocaleString()
-                    : 'Never'}
-                </p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Account Created</label>
-                <p className="text-gray-900 mt-1">
-                  {selectedUser.createdAt
-                    ? new Date(selectedUser.createdAt).toLocaleString()
-                    : 'N/A'}
-                </p>
-              </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+            <div className="flex justify-end border-t border-slate-200/70 px-6 py-4 dark:border-slate-800/70">
               <button
                 onClick={handleCloseDetailsModal}
-                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700 dark:hover:bg-teal-500"
               >
                 Close
               </button>
@@ -720,60 +668,54 @@ const Users: React.FC = () => {
         </div>
       )}
 
-      {/* Reset Password Modal */}
       {showResetPasswordModal && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">Reset Password</h3>
-              <button
-                onClick={handleCloseResetPasswordModal}
-                className="text-gray-400 hover:text-gray-600"
-              >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200/70 bg-white/95 shadow-xl dark:border-slate-700 dark:bg-slate-900/95">
+            <div className="flex items-center justify-between border-b border-slate-200/70 px-6 py-4 dark:border-slate-800/70">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Reset Password</h3>
+              <button onClick={handleCloseResetPasswordModal} className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300">
                 <i className="fas fa-times"></i>
               </button>
             </div>
-            <form onSubmit={handleResetPassword} className="px-6 py-4">
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  User: {selectedUser.name} ({selectedUser.email})
-                </label>
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+            <form onSubmit={handleResetPassword} className="space-y-4 px-6 py-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                User: <span className="text-slate-900 dark:text-slate-100">{selectedUser.name}</span>
+              </p>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">New Password</label>
                 <input
                   type="password"
                   required
                   value={passwordData.newPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   minLength={6}
                 />
               </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Confirm Password</label>
                 <input
                   type="password"
                   required
                   value={passwordData.confirmPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="mt-2 w-full rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                   minLength={6}
                 />
               </div>
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+              <div className="flex justify-end gap-3 border-t border-slate-200/70 pt-4 dark:border-slate-800/70">
                 <button
                   type="button"
                   onClick={handleCloseResetPasswordModal}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-700 dark:border-slate-700 dark:text-slate-300 dark:hover:border-slate-500"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                  className="rounded-xl bg-teal-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-700 dark:hover:bg-teal-500"
                 >
-                  Reset Password
+                  Reset
                 </button>
               </div>
             </form>

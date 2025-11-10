@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 
@@ -21,31 +21,33 @@ interface LowStockProduct {
 
 const Dashboard: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const [timeframe, setTimeframe] = useState<'today' | '7d' | '30d' | 'fy'>('30d');
   const [stats] = useState({
     totalProducts: 474196,
     totalOrders: 1247,
     totalCustomers: 892,
     totalRevenue: 2456789,
     lowStockItems: 23,
-    pendingOrders: 45
+    pendingOrders: 45,
+    avgOrderValue: 19870,
   });
 
   const [recentOrders] = useState<Order[]>([
     {
       id: 'ORD-001',
       customer: 'John Doe',
-      product: 'Gold Ring - 18kt',
+      product: 'Gold Ring · 18kt',
       amount: 25000,
       status: 'pending',
-      date: '2024-01-15'
+      date: '2024-01-15',
     },
     {
       id: 'ORD-002',
       customer: 'Jane Smith',
-      product: 'Diamond Earrings',
+      product: 'Diamond Earrings · VVS1',
       amount: 45000,
       status: 'completed',
-      date: '2024-01-14'
+      date: '2024-01-14',
     },
     {
       id: 'ORD-003',
@@ -53,250 +55,287 @@ const Dashboard: React.FC = () => {
       product: 'Silver Bracelet',
       amount: 15000,
       status: 'processing',
-      date: '2024-01-13'
-    }
+      date: '2024-01-13',
+    },
   ]);
 
   const [lowStockProducts] = useState<LowStockProduct[]>([
     {
       id: 'BR1-RD-1-18-LGEFVVS-6',
-      name: 'Gold Bracelet - 18kt',
+      name: 'Gold Bracelet · 18kt',
       category: 'Bracelets',
       stock: 2,
-      threshold: 5
+      threshold: 5,
     },
     {
       id: 'ER1-18-LGEFVVS',
-      name: 'Diamond Earrings - 18kt',
+      name: 'Diamond Earrings · 18kt',
       category: 'Earrings',
       stock: 1,
-      threshold: 10
+      threshold: 10,
     },
     {
       id: 'ENG1-CUS-30-18-LGEFVVS',
-      name: 'Engagement Ring - Cushion',
+      name: 'Engagement Ring · Cushion',
       category: 'Rings',
       stock: 3,
-      threshold: 8
-    }
+      threshold: 8,
+    },
   ]);
 
-  const getStatusBadge = (status: string) => {
-    const badges: Record<string, string> = {
-      pending: 'bg-yellow-500',
-      processing: 'bg-blue-500',
-      completed: 'bg-green-500',
-      cancelled: 'bg-red-500'
+  const getStatusStyles = (status: string) => {
+    const styleMap: Record<string, string> = {
+      pending: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200',
+      processing: 'bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-200',
+      completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200',
+      cancelled: 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200',
     };
-    return badges[status] || 'bg-gray-500';
+    return styleMap[status] || 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300';
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
-      maximumFractionDigits: 0
+      maximumFractionDigits: 0,
     }).format(amount);
-  };
 
   const formatNumber = (num: number) => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
-    }
+    if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+    if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
     return num.toString();
   };
 
+  const greeting = useMemo(() => {
+    const currentHour = new Date().getHours();
+    if (currentHour < 12) return 'Good morning';
+    if (currentHour < 18) return 'Good afternoon';
+    return 'Good evening';
+  }, []);
+
+  const timeframeOptions = [
+    { id: 'today', label: 'Today' },
+    { id: '7d', label: 'Last 7 Days' },
+    { id: '30d', label: 'Last 30 Days' },
+    { id: 'fy', label: 'FY 24-25' },
+  ] as const;
+
+  const kpiCards = [
+    {
+      label: 'Total Revenue',
+      value: formatCurrency(stats.totalRevenue),
+      delta: '+4.2% WoW',
+      icon: 'fas fa-circle-dollar-to-slot',
+      accent: 'from-teal-500 to-emerald-500',
+    },
+    {
+      label: 'Total Orders',
+      value: formatNumber(stats.totalOrders),
+      delta: '+12 new today',
+      icon: 'fas fa-receipt',
+      accent: 'from-indigo-500 to-blue-500',
+    },
+    {
+      label: 'Active Customers',
+      value: formatNumber(stats.totalCustomers),
+      delta: '+3.8% retention',
+      icon: 'fas fa-user-group',
+      accent: 'from-purple-500 to-fuchsia-500',
+    },
+    {
+      label: 'Avg. Order Value',
+      value: formatCurrency(stats.avgOrderValue),
+      delta: '+₹550 vs last week',
+      icon: 'fas fa-gem',
+      accent: 'from-amber-500 to-orange-500',
+    },
+  ];
+
   return (
-    <div>
-      {/* Welcome Section */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-800 mb-1">
-              Welcome back, {user?.name || 'Admin'}! 👋
-            </h2>
-            <p className="text-gray-600">
-              Here's what's happening with your jewelry business today.
+    <div className="space-y-10">
+      {/* Hero Section */}
+      <section className="overflow-hidden rounded-3xl border border-teal-500/20 bg-gradient-to-br from-teal-500 via-teal-600 to-emerald-500 p-6 text-white shadow-xl">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-3">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-teal-100/80">Jewellery Intelligence</p>
+            <h1 className="text-3xl font-semibold md:text-4xl">
+              {greeting}, {user?.name || 'Admin'}
+            </h1>
+            <p className="max-w-2xl text-sm text-teal-100/90">
+              Monitor operational health, inventory trends, and customer engagement with curated insights built for premium jewelry operations.
             </p>
           </div>
-          <div className="text-right">
-            <div className="text-gray-500 text-sm">
-              {new Date().toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
+          <div className="rounded-2xl border border-white/20 bg-white/10 p-4">
+            <p className="text-xs uppercase tracking-wide text-teal-100/80">System Status</p>
+            <div className="mt-2 flex items-baseline gap-3 text-2xl font-semibold">
+              ₹{formatNumber(stats.totalRevenue)}
+              <span className="text-sm text-teal-100/80">in managed assets</span>
+            </div>
+            <div className="mt-3 flex items-center gap-2 text-xs text-teal-100/70">
+              <span className="inline-flex h-2 w-2 rounded-full bg-emerald-300"></span>
+              All integrations operational
             </div>
           </div>
         </div>
-      </div>
+        <div className="mt-6 flex flex-wrap gap-2 text-xs font-semibold uppercase tracking-wide text-teal-100/80">
+          {timeframeOptions.map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => setTimeframe(id)}
+              className={`rounded-full px-4 py-1.5 transition ${
+                timeframe === id
+                  ? 'bg-white/90 text-teal-700 shadow-sm'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </section>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div className="bg-gradient-to-br from-teal-600 to-teal-700 rounded-lg p-6 text-white">
-          <div className="flex justify-between items-center">
+      {/* KPI Cards */}
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {kpiCards.map((card) => (
+          <div
+            key={card.label}
+            className="group relative overflow-hidden rounded-2xl border border-slate-200/60 bg-white/80 p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-slate-800/70 dark:bg-slate-900/70"
+          >
+            <div className={`absolute -right-10 -top-10 h-28 w-28 rounded-full bg-gradient-to-br ${card.accent} opacity-30 blur-2xl transition group-hover:opacity-40`} />
+            <div className="relative flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{card.label}</p>
+                <p className="mt-3 text-3xl font-semibold text-slate-900 dark:text-white">{card.value}</p>
+                <p className="mt-2 text-xs font-semibold text-emerald-600 dark:text-emerald-300">{card.delta}</p>
+              </div>
+              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800/70 dark:text-slate-200">
+                <i className={`${card.icon} text-lg`}></i>
+              </span>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* Alerts & Highlights */}
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <div className="rounded-2xl border border-amber-200/60 bg-white/80 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-amber-500/30 dark:bg-slate-900/70">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-3xl font-bold mb-1">{formatNumber(stats.totalProducts)}</h3>
-              <p className="text-teal-100">Total Products</p>
+              <p className="text-sm font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-300">Inventory alert</p>
+              <h2 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">{stats.lowStockItems} SKUs below threshold</h2>
             </div>
-            <i className="fas fa-gem text-5xl opacity-30"></i>
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-200">
+              <i className="fas fa-exclamation-triangle"></i>
+            </span>
           </div>
+          <div className="mt-6 space-y-4">
+            {lowStockProducts.map((product) => (
+              <div key={product.id} className="flex items-center justify-between rounded-xl border border-slate-200/60 px-4 py-3 transition hover:border-teal-500/40 dark:border-slate-800/70 dark:hover:border-teal-500/30">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{product.name}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{product.category}</p>
+                </div>
+                <div className="text-right">
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${product.stock <= 2 ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200' : 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200'}`}>
+                    {product.stock} in stock
+                  </span>
+                  <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">Target ≥ {product.threshold}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <button className="mt-5 rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 dark:bg-amber-400 dark:hover:bg-amber-300 dark:text-slate-900">
+            Review replenishment plan
+          </button>
         </div>
 
-        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-6 text-white">
-          <div className="flex justify-between items-center">
+        <div className="rounded-2xl border border-slate-200/60 bg-white/80 p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-slate-800/70 dark:bg-slate-900/70">
+          <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-3xl font-bold mb-1">{formatNumber(stats.totalOrders)}</h3>
-              <p className="text-green-100">Total Orders</p>
+              <p className="text-sm font-semibold uppercase tracking-wide text-sky-600 dark:text-sky-300">Order operations</p>
+              <h2 className="mt-1 text-xl font-semibold text-slate-900 dark:text-white">{stats.pendingOrders} orders pending action</h2>
             </div>
-            <i className="fas fa-shopping-cart text-5xl opacity-30"></i>
+            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-500/20 dark:text-sky-200">
+              <i className="fas fa-clock"></i>
+            </span>
           </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-3xl font-bold mb-1">{formatNumber(stats.totalCustomers)}</h3>
-              <p className="text-blue-100">Total Customers</p>
-            </div>
-            <i className="fas fa-users text-5xl opacity-30"></i>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg p-6 text-white">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="text-2xl font-bold mb-1">{formatCurrency(stats.totalRevenue)}</h3>
-              <p className="text-yellow-100">Total Revenue</p>
-            </div>
-            <i className="fas fa-rupee-sign text-5xl opacity-30"></i>
-          </div>
-        </div>
-      </div>
-
-      {/* Alert Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-lg border border-yellow-200 shadow-sm">
-          <div className="bg-yellow-500 text-white px-6 py-4 rounded-t-lg">
-            <h5 className="font-semibold mb-0">
-              <i className="fas fa-exclamation-triangle mr-2"></i>
-              Low Stock Alert
-            </h5>
-          </div>
-          <div className="p-6">
-            <p className="text-gray-600 mb-4">
-              {stats.lowStockItems} products are running low on stock
-            </p>
-            <div className="space-y-3 mb-4">
-              {lowStockProducts.map((product) => (
-                <div key={product.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-                  <div>
-                    <div className="font-semibold text-gray-800">{product.name}</div>
-                    <small className="text-gray-500">{product.category}</small>
-                  </div>
-                  <span className={`px-3 py-1 rounded-full text-white text-xs font-semibold ${
-                    product.stock <= 2 ? 'bg-red-500' : 'bg-yellow-500'
-                  }`}>
-                    {product.stock} left
+          <div className="mt-6 space-y-4">
+            {recentOrders.slice(0, 3).map((order) => (
+              <div key={order.id} className="flex items-center justify-between rounded-xl border border-slate-200/60 px-4 py-3 transition hover:border-teal-500/40 dark:border-slate-800/70 dark:hover:border-teal-500/30">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{order.customer}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{order.product}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(order.amount)}</p>
+                  <span className={`mt-1 inline-flex rounded-full px-3 py-1 text-[11px] font-semibold ${getStatusStyles(order.status)}`}>
+                    {order.status}
                   </span>
                 </div>
-              ))}
-            </div>
-            <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
-              View All Low Stock Items
-            </button>
+              </div>
+            ))}
           </div>
+          <button className="mt-5 rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-sky-600 dark:bg-sky-400 dark:hover:bg-sky-300 dark:text-slate-900">
+            View fulfillment queue
+          </button>
         </div>
-
-        <div className="bg-white rounded-lg border border-blue-200 shadow-sm">
-          <div className="bg-blue-500 text-white px-6 py-4 rounded-t-lg">
-            <h5 className="font-semibold mb-0">
-              <i className="fas fa-clock mr-2"></i>
-              Pending Orders
-            </h5>
-          </div>
-          <div className="p-6">
-            <p className="text-gray-600 mb-4">
-              {stats.pendingOrders} orders are pending processing
-            </p>
-            <div className="space-y-3 mb-4">
-              {recentOrders.slice(0, 3).map((order) => (
-                <div key={order.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-                  <div>
-                    <div className="font-semibold text-gray-800">{order.customer}</div>
-                    <small className="text-gray-500">{order.product}</small>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-semibold text-gray-800">{formatCurrency(order.amount)}</div>
-                    <span className={`${getStatusBadge(order.status)} text-white px-2 py-1 rounded-full text-xs`}>
-                      {order.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
-              View All Pending Orders
-            </button>
-          </div>
-        </div>
-      </div>
+      </section>
 
       {/* Recent Orders Table */}
-      <div className="bg-white rounded-lg shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h5 className="font-semibold text-gray-800 mb-0">
-            <i className="fas fa-shopping-cart mr-2 text-teal-600"></i>
-            Recent Orders
-          </h5>
+      <section className="rounded-2xl border border-slate-200/60 bg-white/90 shadow-sm transition hover:shadow-md dark:border-slate-800/70 dark:bg-slate-900/70">
+        <div className="flex items-center justify-between border-b border-slate-200/60 px-6 py-4 dark:border-slate-800/70">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Sales pipeline</p>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Recent Orders</h2>
+          </div>
+          <button className="rounded-full border border-slate-200/80 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-teal-500 hover:text-teal-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-teal-400 dark:hover:text-teal-200">
+            Export CSV
+          </button>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
+          <table className="min-w-full text-sm">
+            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-900/90 dark:text-slate-400">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Order ID</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Product</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                <th className="px-6 py-3">Order</th>
+                <th className="px-6 py-3">Customer</th>
+                <th className="px-6 py-3">Product</th>
+                <th className="px-6 py-3">Amount</th>
+                <th className="px-6 py-3">Status</th>
+                <th className="px-6 py-3">Date</th>
+                <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800/70">
               {recentOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="font-semibold text-gray-800">{order.id}</span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">{order.customer}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <i className="fas fa-gem text-teal-600 mr-2"></i>
-                      <span className="text-gray-700">{order.product}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800">{formatCurrency(order.amount)}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`${getStatusBadge(order.status)} text-white px-3 py-1 rounded-full text-xs font-semibold`}>
+                <tr key={order.id} className="transition hover:bg-slate-50 dark:hover:bg-slate-800/60">
+                  <td className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100">{order.id}</td>
+                  <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{order.customer}</td>
+                  <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{order.product}</td>
+                  <td className="px-6 py-4 font-semibold text-slate-900 dark:text-slate-100">{formatCurrency(order.amount)}</td>
+                  <td className="px-6 py-4">
+                    <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusStyles(order.status)}`}>
                       {order.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-600">{new Date(order.date).toLocaleDateString()}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <button className="text-teal-600 hover:text-teal-700 focus:outline-none">
-                      <i className="fas fa-eye"></i>
-                    </button>
+                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">
+                    {new Date(order.date).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <button className="rounded-full border border-slate-200/70 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-teal-500 hover:text-teal-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-teal-400 dark:hover:text-teal-200">
+                        View
+                      </button>
+                      <button className="rounded-full border border-slate-200/70 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-amber-500 hover:text-amber-600 dark:border-slate-700 dark:text-slate-300 dark:hover:border-amber-400 dark:hover:text-amber-200">
+                        Hold
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
   );
 };

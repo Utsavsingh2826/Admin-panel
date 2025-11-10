@@ -6,6 +6,8 @@ import { connectDB } from './config/database';
 import { errorHandler } from './middleware/errorHandler';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
+import defaultValueRoutes from './routes/defaultValues';
+import promoCodesRoutes from './routes/promocodes';
 
 // Load env vars
 dotenv.config();
@@ -57,6 +59,8 @@ app.use(cors(corsOptions));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/default-values', defaultValueRoutes);
+app.use('/api/promocodes', promoCodesRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {

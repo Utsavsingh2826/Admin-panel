@@ -1,5 +1,6 @@
 import { Request } from 'express';
 import { Document } from 'mongoose';
+import mongoose from 'mongoose';
 
 export interface IUser extends Document {
   name: string;
@@ -36,5 +37,24 @@ export interface Verify2FABody {
 export interface JwtPayload {
   id: string;
   step?: string;
+}
+
+export interface IPromoCode extends Document {
+  code: string;
+  discountPercent: number;
+  isActive: boolean;
+  description?: string;
+  createdBy: mongoose.Types.ObjectId;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface IDefaultValue extends Document {
+  goldValue24PerGram?: number;
+  silverPricePerGram?: number;
+  platinumPricePerGram?: number;
+  titaniumPricePerGram?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
