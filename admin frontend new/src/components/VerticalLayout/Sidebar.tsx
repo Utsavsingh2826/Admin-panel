@@ -62,7 +62,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
     {
       title: 'Administration',
       items: [
-        { id: 'settings', label: 'Settings', icon: 'fas fa-cog', path: '/settings' },
         { id: 'users', label: 'Users', icon: 'fas fa-user-shield', path: '/users' },
         { id: 'promocodes', label: 'Promo Codes', icon: 'fas fa-ticket-alt', path: '/promocodes' },
       ],

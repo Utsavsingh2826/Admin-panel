@@ -21,8 +21,6 @@ import MetalPrices from './pages/Admin/MetalPrices';
 import Analytics from './pages/Admin/Analytics';
 import Blogs from './pages/Admin/Blogs';
 import Communication from './pages/Admin/Communication';
-import Settings from './pages/Admin/Settings';
-import Profile from './pages/Admin/Profile';
 import Users from './pages/Admin/Users';
 import PromoCodes from './pages/Admin/PromoCodes';
 
@@ -100,8 +98,6 @@ const App: React.FC = () => {
           <Route path="analytics" element={<Analytics />} />
           <Route path="blogs" element={<Blogs />} />
           <Route path="communication" element={<Communication />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="profile" element={<Profile />} />
           <Route path="users" element={<Users />} />
           <Route path="promocodes" element={<PromoCodes />} />
         </Route>
