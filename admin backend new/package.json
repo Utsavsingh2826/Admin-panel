@@ -9,7 +9,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "seed": "ts-node src/scripts/seedSuperAdmin.ts",
     "create-user": "ts-node src/scripts/createTestUser.ts",
-    "remove-timestamps": "ts-node src/scripts/removeTimestampFields.ts",
+    "seed-defaults": "ts-node src/scripts/seedDefaultValues.ts",
     "test": "jest"
   },
   "keywords": [

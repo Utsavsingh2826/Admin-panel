@@ -18,6 +18,23 @@ const keyToFieldMap: Record<'gold' | 'silver' | 'platinum' | 'titanium', string>
   titanium: 'titaniumPricePerGram',
 };
 
+// All allowed fields in the schema
+const allAllowedFields = [
+  'goldValue24PerGram',
+  'silverPricePerGram',
+  'platinumPricePerGram',
+  'titaniumPricePerGram',
+  'labourCostGold',
+  'labourCostPlatinum',
+  'labourCostSilver',
+  'labourCostTitanium',
+  'goldExpense',
+  'silverExpense',
+  'platinumExpense',
+  'titaniumExpense',
+  'gstValue',
+];
+
 const baseResponse = () => ({
   gold: null as any,
   silver: null as any,
@@ -40,44 +57,45 @@ export const getDefaultValues = asyncHandler(async (_req: AuthRequest, res: Resp
         key: metalKey,
         field: fieldKey,
         value: docObject[fieldKey],
-        createdAt: doc.createdAt,
-        updatedAt: doc.updatedAt,
       };
     }
   });
 
+  // Also return all documents as an array for the Prices page
+  const allDocuments = documents.map((doc) => doc.toObject());
+
   res.status(200).json({
     success: true,
     data,
+    allDocuments, // Add all documents for Prices page
   });
 });
 
 export const updateDefaultValue = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const { id } = req.params;
-  const allowedFields = Object.keys(fieldToKeyMap);
-  const bodyFields = Object.keys(req.body).filter((field) => allowedFields.includes(field));
+  const bodyFields = Object.keys(req.body).filter((field) => allAllowedFields.includes(field));
 
   if (bodyFields.length !== 1) {
-    return next(new ErrorResponse('Please provide exactly one valid metal price field to update', 400));
+    return next(new ErrorResponse('Please provide exactly one valid field to update', 400));
   }
 
   const fieldToUpdate = bodyFields[0];
   const value = req.body[fieldToUpdate];
 
   if (typeof value !== 'number' || Number.isNaN(value) || value < 0) {
-    return next(new ErrorResponse('Price must be a non-negative number', 400));
+    return next(new ErrorResponse('Value must be a non-negative number', 400));
   }
 
   const document = await DefaultValue.findById(id);
 
   if (!document) {
-    return next(new ErrorResponse('Metal price entry not found', 404));
+    return next(new ErrorResponse('Entry not found', 404));
   }
 
   document.set(fieldToUpdate, value);
   await document.save();
 
-  const metalKey = fieldToKeyMap[fieldToUpdate];
+  const metalKey = fieldToKeyMap[fieldToUpdate] || null;
 
   res.status(200).json({
     success: true,
@@ -86,8 +104,6 @@ export const updateDefaultValue = asyncHandler(async (req: AuthRequest, res: Res
       key: metalKey,
       field: fieldToUpdate,
       value: document.get(fieldToUpdate),
-      createdAt: document.createdAt,
-      updatedAt: document.updatedAt,
     },
   });
 });

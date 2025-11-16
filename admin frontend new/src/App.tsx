@@ -18,6 +18,7 @@ import Orders from './pages/Admin/Orders';
 import Customers from './pages/Admin/Customers';
 import Inventory from './pages/Admin/Inventory';
 import MetalPrices from './pages/Admin/MetalPrices';
+import Prices from './pages/Admin/Prices';
 import Analytics from './pages/Admin/Analytics';
 import Blogs from './pages/Admin/Blogs';
 import Communication from './pages/Admin/Communication';
@@ -95,6 +96,7 @@ const App: React.FC = () => {
           <Route path="customers" element={<Customers />} />
           <Route path="inventory" element={<Inventory />} />
           <Route path="metal-prices" element={<MetalPrices />} />
+          <Route path="prices" element={<Prices />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="blogs" element={<Blogs />} />
           <Route path="communication" element={<Communication />} />

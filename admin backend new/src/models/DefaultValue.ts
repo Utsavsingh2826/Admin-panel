@@ -19,6 +19,42 @@ const defaultValueSchema = new Schema<IDefaultValue>(
       type: Number,
       min: [0, 'Titanium price must be a positive number'],
     },
+    labourCostGold: {
+      type: Number,
+      min: [0, 'Labour cost must be a positive number'],
+    },
+    labourCostPlatinum: {
+      type: Number,
+      min: [0, 'Labour cost must be a positive number'],
+    },
+    labourCostSilver: {
+      type: Number,
+      min: [0, 'Labour cost must be a positive number'],
+    },
+    labourCostTitanium: {
+      type: Number,
+      min: [0, 'Labour cost must be a positive number'],
+    },
+    goldExpense: {
+      type: Number,
+      min: [0, 'Expense must be a positive number'],
+    },
+    silverExpense: {
+      type: Number,
+      min: [0, 'Expense must be a positive number'],
+    },
+    platinumExpense: {
+      type: Number,
+      min: [0, 'Expense must be a positive number'],
+    },
+    titaniumExpense: {
+      type: Number,
+      min: [0, 'Expense must be a positive number'],
+    },
+    gstValue: {
+      type: Number,
+      min: [0, 'GST value must be a positive number'],
+    },
   },
   {
     timestamps: false,

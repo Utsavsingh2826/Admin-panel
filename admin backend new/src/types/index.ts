@@ -54,5 +54,14 @@ export interface IDefaultValue extends Document {
   silverPricePerGram?: number;
   platinumPricePerGram?: number;
   titaniumPricePerGram?: number;
+  labourCostGold?: number;
+  labourCostPlatinum?: number;
+  labourCostSilver?: number;
+  labourCostTitanium?: number;
+  goldExpense?: number;
+  silverExpense?: number;
+  platinumExpense?: number;
+  titaniumExpense?: number;
+  gstValue?: number;
 }
 

@@ -49,7 +49,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
         { id: 'orders', label: 'Orders', icon: 'fas fa-shopping-cart', path: '/orders', badge: '12', badgeColor: 'amber' },
         { id: 'customers', label: 'Customers', icon: 'fas fa-user-friends', path: '/customers' },
         { id: 'inventory', label: 'Inventory', icon: 'fas fa-boxes', path: '/inventory', badge: '5', badgeColor: 'rose' },
+      ],
+    },
+    {
+      title: 'Pricing',
+      items: [
         { id: 'metal-prices', label: 'Metal Prices', icon: 'fas fa-coins', path: '/metal-prices' },
+        { id: 'prices', label: 'Prices', icon: 'fas fa-tags', path: '/prices' },
       ],
     },
     {
