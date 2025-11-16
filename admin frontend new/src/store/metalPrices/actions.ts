@@ -16,8 +16,6 @@ export interface MetalPrice {
   key: MetalKey;
   field: string;
   value: number;
-  createdAt?: string;
-  updatedAt?: string;
 }
 
 export interface MetalPricesResponse {

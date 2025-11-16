@@ -156,12 +156,6 @@ const MetalPrices: React.FC = () => {
     });
   };
 
-  const formatTimestamp = (timestamp?: string) => {
-    if (!timestamp) return 'Not available';
-    const date = new Date(timestamp);
-    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -244,13 +238,6 @@ const MetalPrices: React.FC = () => {
                         </div>
                       </div>
                     )}
-
-                    <div className="rounded-lg bg-gray-50 p-3 text-xs text-gray-500 dark:bg-slate-800/70 dark:text-slate-400">
-                      <p>
-                        Last updated:{' '}
-                        <span className="font-medium text-gray-700 dark:text-slate-200">{formatTimestamp(metalData?.updatedAt)}</span>
-                      </p>
-                    </div>
                   </div>
 
                   <div className="mt-6 flex items-center justify-between">

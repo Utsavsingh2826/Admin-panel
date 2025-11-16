@@ -54,7 +54,5 @@ export interface IDefaultValue extends Document {
   silverPricePerGram?: number;
   platinumPricePerGram?: number;
   titaniumPricePerGram?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
 }
 

@@ -21,7 +21,7 @@ const defaultValueSchema = new Schema<IDefaultValue>(
     },
   },
   {
-    timestamps: true,
+    timestamps: false,
     collection: 'defaultvalues',
   }
 );
