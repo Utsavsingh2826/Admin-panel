@@ -76,7 +76,7 @@ export const promoCodesReducer = (state = initialState, action: any): PromoCodes
 
     case CREATE_PROMOCODE_SUCCESS:
       return {
-        ...state,
+        ...state, 
         loading: false,
         promoCodes: [action.payload, ...state.promoCodes],
         error: null,

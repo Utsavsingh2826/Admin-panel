@@ -24,6 +24,7 @@ import Blogs from './pages/Admin/Blogs';
 import Communication from './pages/Admin/Communication';
 import Users from './pages/Admin/Users';
 import PromoCodes from './pages/Admin/PromoCodes';
+import CustomizationRequests from './pages/Admin/CustomizationRequests';
 
 // Private Route Component
 interface PrivateRouteProps {
@@ -102,6 +103,7 @@ const App: React.FC = () => {
           <Route path="communication" element={<Communication />} />
           <Route path="users" element={<Users />} />
           <Route path="promocodes" element={<PromoCodes />} />
+          <Route path="customization-requests" element={<CustomizationRequests />} />
         </Route>
 
         {/* Catch all route */}

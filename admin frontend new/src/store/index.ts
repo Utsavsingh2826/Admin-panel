@@ -9,6 +9,9 @@ import authReducer from './auth/reducer';
 import { usersReducer } from './users/reducer';
 import { promoCodesReducer } from './promocodes/reducer';
 import { metalPricesReducer } from './metalPrices/reducer';
+import { blogsReducer } from './blogs/reducer';
+import { customizationRequestsReducer } from './customizationRequests/reducer';
+import { ordersReducer } from './orders/reducer';
 
 // Persist config
 const persistConfig = {
@@ -23,6 +26,9 @@ const rootReducer = combineReducers({
   users: usersReducer,
   promoCodes: promoCodesReducer,
   metalPrices: metalPricesReducer,
+  blogs: blogsReducer,
+  customizationRequests: customizationRequestsReducer,
+  orders: ordersReducer,
 });
 
 // Persisted reducer
