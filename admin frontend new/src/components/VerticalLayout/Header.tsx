@@ -59,8 +59,8 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         </button>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-teal-600 dark:text-teal-300">Jewellery Intelligence</p>
-          <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Jewelry Admin Dashboard</h1>
+          <p className="text-xs font-semibold uppercase tracking-wide text-teal-600 dark:text-teal-300">KYNA Jewellery Intelligence</p>
+          <h1 className="text-lg font-semibold text-slate-900 dark:text-slate-100">KYNA Admin Dashboard</h1>
         </div>
       </div>
 
