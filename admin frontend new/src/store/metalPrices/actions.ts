@@ -37,12 +37,19 @@ export const fetchMetalPrices = () => async (dispatch: any) => {
 
   try {
     const response = await api.get('/default-values');
+    console.log('Metal Prices API Response:', response.data);
+    console.log('Metal Prices Data:', response.data.data);
+    
+    // Ensure we have the correct data structure
+    const metalPricesData = response.data.data || {};
+    
     dispatch({
       type: FETCH_METAL_PRICES_SUCCESS,
-      payload: response.data.data as MetalPricesResponse,
+      payload: metalPricesData as MetalPricesResponse,
     });
-    return response.data.data;
+    return metalPricesData;
   } catch (error: any) {
+    console.error('Metal Prices API Error:', error);
     const message = error.response?.data?.error || error.message || 'Failed to fetch metal prices';
     dispatch({
       type: FETCH_METAL_PRICES_FAILURE,

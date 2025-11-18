@@ -1,5 +1,5 @@
 import { Response, NextFunction } from 'express';
-import User from '../models/User';
+import AdminUser from '../models/AdminUser';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { ErrorResponse } from '../utils/errorResponse';
 import { AuthRequest } from '../types';
@@ -44,15 +44,15 @@ export const getUsers = asyncHandler(async (req: AuthRequest, res: Response) => 
     query.role = role;
   }
 
-  // Get users
-  const users = await User.find(query)
+  // Get admin users
+  const users = await AdminUser.find(query)
     .select('-password -twoFactorCode -twoFactorCodeExpires')
     .sort({ createdAt: -1 })
     .skip(skip)
     .limit(limit);
 
   // Get total count
-  const total = await User.countDocuments(query);
+  const total = await AdminUser.countDocuments(query);
 
   res.status(200).json({
     success: true,
@@ -68,7 +68,7 @@ export const getUsers = asyncHandler(async (req: AuthRequest, res: Response) => 
 // @route   GET /api/users/:id
 // @access  Private/Superadmin
 export const getUser = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const user = await User.findById(req.params.id).select('-password -twoFactorCode -twoFactorCodeExpires');
+  const user = await AdminUser.findById(req.params.id).select('-password -twoFactorCode -twoFactorCodeExpires');
 
   if (!user) {
     return next(new ErrorResponse(`User not found with id of ${req.params.id}`, 404));
@@ -91,8 +91,8 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response, n
     return next(new ErrorResponse('Please provide name, email, and password', 400));
   }
 
-  // Check if user exists
-  const existingUser = await User.findOne({ email: email.toLowerCase() });
+  // Check if admin user exists
+  const existingUser = await AdminUser.findOne({ email: email.toLowerCase() });
   if (existingUser) {
     return next(new ErrorResponse('User with this email already exists', 400));
   }
@@ -103,8 +103,8 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response, n
     return next(new ErrorResponse(`Invalid role. Must be one of: ${validRoles.join(', ')}`, 400));
   }
 
-  // Create user (password will be hashed by pre-save middleware)
-  const user = await User.create({
+  // Create admin user (password will be hashed by pre-save middleware)
+  const user = await AdminUser.create({
     name,
     email: email.toLowerCase(),
     password,
@@ -127,7 +127,7 @@ export const createUser = asyncHandler(async (req: AuthRequest, res: Response, n
 export const updateUser = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
   const { name, email, password, role, isActive } = req.body;
 
-  let user = await User.findById(req.params.id);
+  let user = await AdminUser.findById(req.params.id);
 
   if (!user) {
     return next(new ErrorResponse(`User not found with id of ${req.params.id}`, 404));
@@ -141,7 +141,7 @@ export const updateUser = asyncHandler(async (req: AuthRequest, res: Response, n
 
   // Check if email is being changed and if it's already taken
   if (email && email.toLowerCase() !== user.email) {
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await AdminUser.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return next(new ErrorResponse('User with this email already exists', 400));
     }
@@ -175,7 +175,7 @@ export const updateUser = asyncHandler(async (req: AuthRequest, res: Response, n
 // @route   DELETE /api/users/:id
 // @access  Private/Superadmin
 export const deleteUser = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const user = await User.findById(req.params.id);
+  const user = await AdminUser.findById(req.params.id);
 
   if (!user) {
     return next(new ErrorResponse(`User not found with id of ${req.params.id}`, 404));
@@ -200,7 +200,7 @@ export const deleteUser = asyncHandler(async (req: AuthRequest, res: Response, n
 // @route   PATCH /api/users/:id/toggle-status
 // @access  Private/Superadmin
 export const toggleUserStatus = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const user = await User.findById(req.params.id);
+  const user = await AdminUser.findById(req.params.id);
 
   if (!user) {
     return next(new ErrorResponse(`User not found with id of ${req.params.id}`, 404));
@@ -228,7 +228,7 @@ export const toggleUserStatus = asyncHandler(async (req: AuthRequest, res: Respo
 // @route   PATCH /api/users/:id/unlock
 // @access  Private/Superadmin
 export const unlockUser = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const user = await User.findById(req.params.id);
+  const user = await AdminUser.findById(req.params.id);
 
   if (!user) {
     return next(new ErrorResponse(`User not found with id of ${req.params.id}`, 404));
@@ -259,7 +259,7 @@ export const resetPassword = asyncHandler(async (req: AuthRequest, res: Response
     return next(new ErrorResponse('Password must be at least 6 characters', 400));
   }
 
-  const user = await User.findById(req.params.id);
+  const user = await AdminUser.findById(req.params.id);
 
   if (!user) {
     return next(new ErrorResponse(`User not found with id of ${req.params.id}`, 404));

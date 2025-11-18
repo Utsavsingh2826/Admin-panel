@@ -12,6 +12,7 @@
     "seed-defaults": "ts-node src/scripts/seedDefaultValues.ts",
     "seed-customization": "ts-node src/scripts/seedCustomizationRequests.ts",
     "seed-orders": "ts-node src/scripts/seedOrders.ts",
+    "update-orders-payment": "ts-node src/scripts/updateOrdersPaymentStatus.ts",
     "test": "jest"
   },
   "keywords": [

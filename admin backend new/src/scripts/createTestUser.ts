@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import User from '../models/User';
+import AdminUser from '../models/AdminUser';
 
 dotenv.config();
 
@@ -10,15 +10,15 @@ const createTestUser = async () => {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/jewelry-admin');
     console.log('Connected to MongoDB');
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email: 'admin@jewelry.com' });
+    // Check if admin user already exists
+    const existingUser = await AdminUser.findOne({ email: 'admin@jewelry.com' });
     if (existingUser) {
-      console.log('Test user already exists!');
+      console.log('Test admin user already exists!');
       process.exit(0);
     }
 
-    // Create test user (password will be hashed by pre-save middleware)
-    await User.create({
+    // Create test admin user (password will be hashed by pre-save middleware)
+    await AdminUser.create({
       name: 'Admin User',
       email: 'admin@jewelry.com',
       password: 'admin123',

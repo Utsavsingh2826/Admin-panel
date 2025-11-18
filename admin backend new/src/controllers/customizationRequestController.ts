@@ -75,15 +75,8 @@ export const processOrder = asyncHandler(async (req: AuthRequest, res: Response,
   const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
 
   const orderData = {
-    number: orderNumber,
+    orderNumber: orderNumber,
     user: userIdObjectId,
-    customer: {
-      email: contactInfo.email,
-      phone: contactInfo.phoneNumber,
-      firstName: contactInfo.firstName,
-      lastName: contactInfo.lastName,
-    },
-    status: "pending" as const,
     orderStatus: "pending" as const,
     orderType: "customized" as const,
     items: [{
@@ -141,45 +134,36 @@ export const processOrder = asyncHandler(async (req: AuthRequest, res: Response,
       },
     }],
     shippingAddress: {
-      name: `${contactInfo.firstName} ${contactInfo.lastName}`,
-      phone: contactInfo.phoneNumber,
-      line1: contactInfo.address,
+      street: contactInfo.address,
       city: contactInfo.city,
       state: contactInfo.state,
-      postalCode: contactInfo.zipCode,
+      zipCode: contactInfo.zipCode,
       country: contactInfo.country,
+      sameAsBilling: true,
     },
     billingAddress: {
-      name: `${contactInfo.firstName} ${contactInfo.lastName}`,
-      phone: contactInfo.phoneNumber,
-      line1: contactInfo.address,
+      street: contactInfo.address,
       city: contactInfo.city,
       state: contactInfo.state,
-      postalCode: contactInfo.zipCode,
+      zipCode: contactInfo.zipCode,
       country: contactInfo.country,
+      sameAsBilling: true,
     },
-    pricing: {
-      currency: "INR" as const,
-      subtotal: customizationRequest.finalPrice || customizationRequest.estimatedPrice || 0,
-      discount: 0,
-      shipping: 0,
-      tax: customizationRequest.priceBreakdown?.gst || 0,
-      total: customizationRequest.finalPrice || customizationRequest.estimatedPrice || 0,
-    },
-    payment: {
-      method: "cod" as const,
-      status: "pending" as const,
-    },
-    shipping: {},
-    notes: `Order created from customization request: ${customizationRequest.requestNumber}`,
-    tags: ["customized", customizationRequest.category.toLowerCase()],
-    orderedAt: new Date(),
+    subtotal: customizationRequest.finalPrice || customizationRequest.estimatedPrice || 0,
+    totalAmount: customizationRequest.finalPrice || customizationRequest.estimatedPrice || 0,
+    shippingCharge: 0,
+    gst: customizationRequest.priceBreakdown?.gst || 0,
+    paymentMethod: "Credit Card", // Default, not COD
+    paymentStatus: "pending" as const,
+    orderedAt: Date.now(), // Use timestamp instead of Date
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   };
 
   const order = await Order.create(orderData);
 
   // Update customization request status
-  await customizationRequest.updateStatus(CustomizationStatus.COMPLETED, `Order ${order.number} has been created from this customization request.`);
+  await customizationRequest.updateStatus(CustomizationStatus.COMPLETED, `Order ${order.orderNumber} has been created from this customization request.`);
 
   res.status(201).json({
     success: true,

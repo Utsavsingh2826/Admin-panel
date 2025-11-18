@@ -2,7 +2,14 @@ import { Request } from 'express';
 import { Document } from 'mongoose';
 import mongoose from 'mongoose';
 
-export interface IUser extends Document {
+export interface IAddress {
+  shippingAddress?: {
+    sameAsBilling?: boolean;
+  };
+}
+
+// Admin User Interface (for admin users only)
+export interface IAdminUser extends Document {
   name: string;
   email: string;
   password: string;
@@ -19,8 +26,34 @@ export interface IUser extends Document {
   resetLoginAttempts(): Promise<void>;
 }
 
+// Customer User Interface (for customers only)
+export interface IUser extends Document {
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  email: string;
+  password?: string;
+  isVerified?: boolean;
+  role: 'customer';
+  address?: IAddress;
+  orders?: mongoose.Types.ObjectId[];
+  wishlist?: mongoose.Types.ObjectId[];
+  gifts?: any[];
+  isActive: boolean;
+  availableOffers?: number;
+  referredBy?: mongoose.Types.ObjectId | null;
+  refDiscount?: number;
+  referralCount?: number;
+  totalReferralEarnings?: number;
+  usedPromoCodes?: any[];
+  usedReferralCodes?: any[];
+  lastLogin?: number | Date | null;
+  referralCode?: string;
+  phone?: string;
+}
+
 export interface AuthRequest extends Request {
-  user?: IUser;
+  user?: IAdminUser; // Admin users for authentication
 }
 
 export interface LoginCredentials {

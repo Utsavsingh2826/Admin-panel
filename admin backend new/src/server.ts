@@ -11,6 +11,8 @@ import promoCodesRoutes from './routes/promocodes';
 import blogRoutes from './routes/blogs';
 import customizationRequestRoutes from './routes/customizationRequests';
 import orderRoutes from './routes/orders';
+import customerRoutes from './routes/customers';
+import productRoutes from './routes/products';
 
 // Load env vars
 dotenv.config();
@@ -67,6 +69,8 @@ app.use('/api/promocodes', promoCodesRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/customization-requests', customizationRequestRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/products', productRoutes);
 
 // Health check
 app.get('/health', (_req, res) => {

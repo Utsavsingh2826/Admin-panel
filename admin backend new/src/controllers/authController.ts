@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import User from '../models/User';
+import AdminUser from '../models/AdminUser';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { ErrorResponse } from '../utils/errorResponse';
 import { sendEmail } from '../utils/sendEmail';
@@ -47,8 +47,8 @@ export const login = asyncHandler(async (req: AuthRequest, res: Response, next: 
     return next(new ErrorResponse('Please provide email and password', 400));
   }
 
-  // Find user with password and 2FA code
-  const user = await User.findOne({ email: email.toLowerCase() })
+  // Find admin user with password and 2FA code
+  const user = await AdminUser.findOne({ email: email.toLowerCase() })
     .select('+password +twoFactorCode');
 
   if (!user) {
@@ -159,8 +159,8 @@ export const verify2FA = asyncHandler(async (req: AuthRequest, res: Response, ne
     return next(new ErrorResponse('Token expired or invalid', 401));
   }
 
-  // Find user with 2FA code
-  const user = await User.findById(decoded.id).select('+twoFactorCode');
+  // Find admin user with 2FA code
+  const user = await AdminUser.findById(decoded.id).select('+twoFactorCode');
   if (!user) {
     return next(new ErrorResponse('User not found', 404));
   }
@@ -213,7 +213,7 @@ export const resend2FA = asyncHandler(async (req: AuthRequest, res: Response, ne
     return next(new ErrorResponse('Token expired. Please login again.', 401));
   }
 
-  const user = await User.findById(decoded.id);
+  const user = await AdminUser.findById(decoded.id);
   if (!user) {
     return next(new ErrorResponse('User not found', 404));
   }
@@ -256,7 +256,7 @@ export const resend2FA = asyncHandler(async (req: AuthRequest, res: Response, ne
 // @route   GET /api/auth/me
 // @access  Private
 export const getMe = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const user = await User.findById(req.user!._id);
+  const user = await AdminUser.findById(req.user!._id);
 
   res.status(200).json({
     success: true,

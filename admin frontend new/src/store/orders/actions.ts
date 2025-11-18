@@ -188,6 +188,7 @@ export interface Order {
   }>;
   notes?: string;
   tags?: string[];
+  metadata?: Record<string, any>;
   estimatedDeliveryDate?: string;
   orderedAt: string;
   shippedAt?: string;
@@ -203,13 +204,29 @@ export const fetchOrders = () => async (dispatch: any) => {
 
   try {
     const response = await api.get('/orders');
+    console.log('✅ Orders fetched successfully:', response.data);
+    
+    // Ensure we have an array
+    const ordersData = Array.isArray(response.data.data) ? response.data.data : [];
+    
     dispatch({
       type: FETCH_ORDERS_SUCCESS,
-      payload: response.data.data,
+      payload: ordersData,
     });
-    return response.data.data;
+    return ordersData;
   } catch (error: any) {
-    const message = error.response?.data?.message || error.message || 'Failed to fetch orders';
+    console.error('❌ Error fetching orders:', error);
+    console.error('Error response:', error.response);
+    console.error('Error status:', error.response?.status);
+    console.error('Error data:', error.response?.data);
+    
+    // Extract error message from various possible locations
+    const message = 
+      error.response?.data?.message || 
+      error.response?.data?.error?.message ||
+      error.message || 
+      `Failed to fetch orders${error.response?.status ? ` (Status: ${error.response.status})` : ''}`;
+    
     dispatch({
       type: FETCH_ORDERS_FAILURE,
       payload: message,
@@ -263,6 +280,8 @@ export const createShipment = (id: string) => async (dispatch: any) => {
 
   try {
     const response = await api.post(`/orders/${id}/create-shipment`);
+    // Log the response for debugging
+    console.log('Frontend - Shipment Response:', JSON.stringify(response.data, null, 2));
     dispatch({
       type: CREATE_SHIPMENT_SUCCESS,
       payload: response.data.data,

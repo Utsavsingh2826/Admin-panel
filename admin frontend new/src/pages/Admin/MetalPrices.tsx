@@ -60,11 +60,14 @@ const MetalPrices: React.FC = () => {
 
   const loadMetalPrices = async (showToast = false) => {
     try {
-      await dispatch(fetchMetalPrices() as any);
+      const result = await dispatch(fetchMetalPrices() as any);
+      console.log('Metal Prices loaded:', result);
+      console.log('Current metals state:', metals);
       if (showToast) {
         toast.success('Metal prices refreshed');
       }
     } catch (err: any) {
+      console.error('Error loading metal prices:', err);
       toast.error(err.message || 'Failed to load metal prices');
     }
   };

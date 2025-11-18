@@ -88,15 +88,42 @@ const Orders: React.FC = () => {
   };
 
   const handleCreateShipment = async (order: Order) => {
+    // Check if shipment already exists
+    if (order.shipping?.trackingNumber || order.trackingNumber) {
+      toast.warning(`Shipment already exists for this order. Docket Number: ${order.shipping?.trackingNumber || order.trackingNumber}`);
+      return;
+    }
+
     if (!window.confirm(`Create shipment for order ${order.number}? This will schedule pickup for tomorrow at 4 PM.`)) {
       return;
     }
 
     try {
       const response = await dispatch(createShipment(order._id) as any);
-      toast.success(`Shipment created successfully! Docket Number: ${response.data.shipment.docketNumber}`);
+      // Extract docket number from response - Sequel API uses docket_number (snake_case)
+      // Response structure: { data: { order: {...}, shipment: { docket_number: "..." } } }
+      const docketNumber = 
+        response?.data?.shipment?.docket_number ||  // Sequel API response format (snake_case)
+        response?.data?.shipment?.docketNumber ||   // Fallback camelCase
+        response?.data?.data?.docket_number ||      // Direct from Sequel response
+        response?.data?.data?.docketNumber ||
+        response?.data?.order?.shipping?.trackingNumber ||
+        response?.data?.order?.trackingNumber ||
+        response?.data?.order?.metadata?.sequelDocketNumber ||
+        'N/A';
+      
+      console.log('Frontend - Full response:', JSON.stringify(response, null, 2));
+      console.log('Frontend - Extracted docket number:', docketNumber);
+      
+      if (docketNumber !== 'N/A') {
+        toast.success(`Shipment created successfully! Docket Number: ${docketNumber}`);
+      } else {
+        toast.success('Shipment created successfully!');
+      }
+      // Reload orders to get updated order with tracking number
       await loadOrders();
     } catch (error: any) {
+      console.error('Frontend - Shipment creation error:', error);
       toast.error(error.message || 'Failed to create shipment');
     }
   };
@@ -197,32 +224,32 @@ const Orders: React.FC = () => {
           <p className="text-gray-600 dark:text-slate-400">No orders found</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+        <div className="w-full">
+          <table className="w-full border-collapse table-fixed">
             <thead>
               <tr className="border-b border-gray-200 dark:border-slate-800">
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
-                  Order Number
+                <th className="w-[12%] px-2 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                  Order #
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                <th className="w-[15%] px-2 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
                   Customer
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                <th className="w-[12%] px-2 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400 hidden lg:table-cell">
                   Items
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                <th className="w-[10%] px-2 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
                   Amount
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                <th className="w-[10%] px-2 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
                   Status
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                <th className="w-[10%] px-2 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400 hidden md:table-cell">
                   Payment
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                <th className="w-[10%] px-2 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400 hidden lg:table-cell">
                   Date
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                <th className="w-[21%] px-2 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
                   Actions
                 </th>
               </tr>
@@ -236,124 +263,123 @@ const Orders: React.FC = () => {
                       className="hover:bg-gray-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
                       onClick={() => toggleOrderDetails(order._id)}
                     >
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
+                      <td className="px-2 py-4">
+                        <div className="flex items-center gap-1.5">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleOrderDetails(order._id);
                             }}
-                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
                           >
-                            <i className={`fas fa-chevron-${isExpanded ? 'down' : 'right'} text-sm`}></i>
+                            <i className={`fas fa-chevron-${isExpanded ? 'down' : 'right'} text-xs`}></i>
                           </button>
-                          <div>
-                            <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-xs font-semibold text-gray-900 dark:text-white truncate">
                               {order.number}
                             </div>
                             {order.orderType === 'customized' && (
-                              <span className="inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-200">
-                                Customized
+                              <span className="inline-block mt-0.5 px-1.5 py-0.5 text-[10px] font-semibold rounded bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-200">
+                                Custom
                               </span>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-4">
-                        <div className="text-sm text-gray-900 dark:text-white">
+                      <td className="px-2 py-4">
+                        <div className="text-xs font-medium text-gray-900 dark:text-white truncate">
                           {order.customer.firstName} {order.customer.lastName}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-slate-400">
+                        <div className="text-[10px] text-gray-500 dark:text-slate-400 truncate">
                           {order.customer.email}
                         </div>
                         {order.customer.phone && (
-                          <div className="text-xs text-gray-500 dark:text-slate-400">
+                          <div className="text-[10px] text-gray-500 dark:text-slate-400 truncate">
                             {order.customer.phone}
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-4">
-                        <div className="text-sm text-gray-900 dark:text-white">
+                      <td className="px-2 py-4 hidden lg:table-cell">
+                        <div className="text-xs text-gray-900 dark:text-white">
                           {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-slate-400 truncate max-w-xs">
+                        <div className="text-[10px] text-gray-500 dark:text-slate-400 truncate">
                           {order.items[0]?.name || 'N/A'}
                         </div>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
-                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                      <td className="px-2 py-4">
+                        <div className="text-xs font-semibold text-gray-900 dark:text-white">
                           {formatCurrency(order.totalAmount || order.pricing?.total || 0)}
                         </div>
                         {order.pricing?.discount && order.pricing.discount > 0 && (
-                          <div className="text-xs text-emerald-600 dark:text-emerald-400">
-                            Discount: {formatCurrency(order.pricing.discount)}
+                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                            -{formatCurrency(order.pricing.discount)}
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      <td className="px-2 py-4">
                         <span
-                          className={`inline-block rounded-full px-3 py-1 text-xs font-semibold capitalize ${getStatusColor(order.status)}`}
+                          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize truncate max-w-full ${getStatusColor(order.status)}`}
                         >
                           {order.status.replace('_', ' ')}
                         </span>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap">
+                      <td className="px-2 py-4 hidden md:table-cell">
                         <span
-                          className={`inline-block rounded-full px-3 py-1 text-xs font-semibold capitalize ${getPaymentStatusColor(order.payment?.status || order.paymentStatus || 'pending')}`}
+                          className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize truncate max-w-full ${getPaymentStatusColor(order.payment?.status || order.paymentStatus || 'pending')}`}
                         >
                           {order.payment?.status || order.paymentStatus || 'pending'}
                         </span>
                         {order.payment?.transactionId && (
-                          <div className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-                            {order.payment.transactionId}
+                          <div className="text-[10px] text-gray-500 dark:text-slate-400 truncate mt-0.5">
+                            {order.payment.transactionId.substring(0, 8)}...
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-slate-400">
+                      <td className="px-2 py-4 hidden lg:table-cell text-xs text-gray-500 dark:text-slate-400">
                         {formatDate(order.orderedAt)}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-2 flex-wrap">
+                      <td className="px-2 py-4" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1 flex-wrap">
                           <button
                             onClick={() => handleViewDetails(order)}
-                            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                            className="rounded border border-gray-300 px-2 py-1 text-[10px] font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                            title="View Details"
                           >
-                            <i className="fas fa-eye mr-1"></i>
-                            View
+                            <i className="fas fa-eye"></i>
                           </button>
                           {canManageOrders && (
                             <>
-                              {!order.shipping?.trackingNumber && (
+                              {!order.shipping?.trackingNumber && !order.trackingNumber && (
                                 <button
                                   onClick={() => handleCreateShipment(order)}
                                   disabled={creatingShipmentId === order._id}
-                                  className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600"
+                                  className="rounded bg-blue-600 px-2 py-1 text-[10px] font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400 dark:bg-blue-500 dark:hover:bg-blue-600"
+                                  title="Create Shipment"
                                 >
                                   {creatingShipmentId === order._id ? (
-                                    <>
-                                      <i className="fas fa-circle-notch mr-1 animate-spin"></i>
-                                      Creating...
-                                    </>
+                                    <i className="fas fa-circle-notch animate-spin"></i>
                                   ) : (
-                                    <>
-                                      <i className="fas fa-truck mr-1"></i>
-                                      Create Shipment
-                                    </>
+                                    <i className="fas fa-truck"></i>
                                   )}
                                 </button>
+                              )}
+                              {(order.shipping?.trackingNumber || order.trackingNumber) && (
+                                <div className="text-[10px] text-gray-500 dark:text-slate-400 truncate max-w-[80px]" title={`Docket: ${order.shipping?.trackingNumber || order.trackingNumber}`}>
+                                  <i className="fas fa-check-circle text-emerald-600"></i>
+                                  {String(order.shipping?.trackingNumber || order.trackingNumber).substring(0, 6)}...
+                                </div>
                               )}
                               <button
                                 onClick={() => handleUpdateStatus(order)}
                                 disabled={updatingStatusId === order._id}
-                                className="rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-400 dark:bg-teal-500 dark:hover:bg-teal-600"
+                                className="rounded bg-teal-600 px-2 py-1 text-[10px] font-semibold text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-teal-400 dark:bg-teal-500 dark:hover:bg-teal-600"
+                                title="Update Status"
                               >
                                 {updatingStatusId === order._id ? (
                                   <i className="fas fa-circle-notch animate-spin"></i>
                                 ) : (
-                                  <>
-                                    <i className="fas fa-edit mr-1"></i>
-                                    Status
-                                  </>
+                                  <i className="fas fa-edit"></i>
                                 )}
                               </button>
                             </>
@@ -363,38 +389,38 @@ const Orders: React.FC = () => {
                     </tr>
                     {isExpanded && (
                       <tr className="bg-gray-50 dark:bg-slate-800/30">
-                        <td colSpan={8} className="px-4 py-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <td colSpan={8} className="px-2 py-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-full">
                             {/* Order Items Details */}
-                            <div className="md:col-span-2">
-                              <h4 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">
+                            <div className="md:col-span-2 min-w-0">
+                              <h4 className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-2">
                                 Order Items
                               </h4>
-                              <div className="space-y-3">
+                              <div className="space-y-2 max-h-96 overflow-y-auto">
                                 {order.items.map((item, idx) => (
                                   <div
                                     key={idx}
-                                    className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-gray-200 dark:border-slate-700"
+                                    className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-gray-200 dark:border-slate-700"
                                   >
-                                    <div className="flex justify-between items-start mb-2">
-                                      <div className="flex-1">
-                                        <p className="font-semibold text-gray-900 dark:text-white">
+                                    <div className="flex justify-between items-start mb-1.5 gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-semibold text-xs text-gray-900 dark:text-white truncate">
                                           {item.name}
                                         </p>
-                                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+                                        <p className="text-[10px] text-gray-500 dark:text-slate-400 mt-0.5 truncate">
                                           {item.category} {item.category1 && `- ${item.category1}`}
                                         </p>
                                       </div>
-                                      <div className="text-right">
-                                        <p className="font-semibold text-gray-900 dark:text-white">
+                                      <div className="text-right flex-shrink-0">
+                                        <p className="font-semibold text-xs text-gray-900 dark:text-white">
                                           {formatCurrency(item.unitPrice.amount, item.unitPrice.currency)}
                                         </p>
-                                        <p className="text-xs text-gray-500 dark:text-slate-400">
+                                        <p className="text-[10px] text-gray-500 dark:text-slate-400">
                                           Qty: {item.quantity}
                                         </p>
                                       </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                                    <div className="grid grid-cols-2 gap-1.5 mt-2 text-[10px]">
                                       {item.metal && (
                                         <div>
                                           <span className="text-gray-500 dark:text-slate-400">Metal: </span>
@@ -444,14 +470,14 @@ const Orders: React.FC = () => {
                             </div>
 
                             {/* Order Information */}
-                            <div>
-                              <h4 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">
+                            <div className="min-w-0">
+                              <h4 className="text-xs font-semibold text-gray-700 dark:text-slate-300 mb-2">
                                 Order Information
                               </h4>
-                              <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-gray-200 dark:border-slate-700 space-y-3">
+                              <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-gray-200 dark:border-slate-700 space-y-2 max-h-96 overflow-y-auto">
                                 <div>
-                                  <p className="text-xs text-gray-500 dark:text-slate-400">Shipping Address</p>
-                                  <p className="text-sm text-gray-900 dark:text-white mt-1">
+                                  <p className="text-[10px] text-gray-500 dark:text-slate-400">Shipping Address</p>
+                                  <p className="text-xs text-gray-900 dark:text-white mt-0.5 break-words">
                                     {order.shippingAddress.line1}
                                     <br />
                                     {order.shippingAddress.city}, {order.shippingAddress.state}
@@ -459,28 +485,39 @@ const Orders: React.FC = () => {
                                     {order.shippingAddress.postalCode}, {order.shippingAddress.country}
                                   </p>
                                 </div>
-                                {order.shipping?.trackingNumber && (
+                                {(order.shipping?.trackingNumber || order.trackingNumber) && (
                                   <div>
-                                    <p className="text-xs text-gray-500 dark:text-slate-400">Tracking Number</p>
-                                    <p className="text-sm font-semibold text-gray-900 dark:text-white mt-1">
-                                      {order.shipping.trackingNumber}
+                                    <p className="text-[10px] text-gray-500 dark:text-slate-400">Tracking Number (Docket)</p>
+                                    <p className="text-xs font-semibold text-gray-900 dark:text-white mt-0.5 break-all">
+                                      {order.shipping?.trackingNumber || order.trackingNumber}
                                     </p>
-                                    {order.shipping.carrier && (
-                                      <p className="text-xs text-gray-500 dark:text-slate-400">
-                                        Carrier: {order.shipping.carrier}
+                                    {(order.shipping?.carrier || order.courierService) && (
+                                      <p className="text-[10px] text-gray-500 dark:text-slate-400">
+                                        Carrier: {order.shipping?.carrier || order.courierService}
                                       </p>
+                                    )}
+                                    {order.metadata?.sequelDocketPrint && (
+                                      <a
+                                        href={order.metadata.sequelDocketPrint}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[10px] text-teal-600 hover:text-teal-700 dark:text-teal-400 mt-0.5 inline-block"
+                                      >
+                                        <i className="fas fa-download mr-1"></i>
+                                        Download Docket
+                                      </a>
                                     )}
                                   </div>
                                 )}
                                 <div>
-                                  <p className="text-xs text-gray-500 dark:text-slate-400">Payment Method</p>
-                                  <p className="text-sm text-gray-900 dark:text-white mt-1 capitalize">
+                                  <p className="text-[10px] text-gray-500 dark:text-slate-400">Payment Method</p>
+                                  <p className="text-xs text-gray-900 dark:text-white mt-0.5 capitalize">
                                     {order.payment?.method || order.paymentMethod || 'N/A'}
                                   </p>
                                 </div>
                                 <div>
-                                  <p className="text-xs text-gray-500 dark:text-slate-400">Pricing Breakdown</p>
-                                  <div className="mt-2 space-y-1 text-xs">
+                                  <p className="text-[10px] text-gray-500 dark:text-slate-400">Pricing Breakdown</p>
+                                  <div className="mt-1.5 space-y-0.5 text-[10px]">
                                     <div className="flex justify-between">
                                       <span className="text-gray-600 dark:text-slate-400">Subtotal:</span>
                                       <span className="text-gray-900 dark:text-white">
@@ -514,8 +551,8 @@ const Orders: React.FC = () => {
                                   </div>
                                 </div>
                                 <div>
-                                  <p className="text-xs text-gray-500 dark:text-slate-400">Timeline</p>
-                                  <div className="mt-2 space-y-1 text-xs">
+                                  <p className="text-[10px] text-gray-500 dark:text-slate-400">Timeline</p>
+                                  <div className="mt-1.5 space-y-0.5 text-[10px]">
                                     <p className="text-gray-600 dark:text-slate-400">
                                       Ordered: {formatDate(order.orderedAt)}
                                     </p>
@@ -533,8 +570,8 @@ const Orders: React.FC = () => {
                                 </div>
                                 {order.notes && (
                                   <div>
-                                    <p className="text-xs text-gray-500 dark:text-slate-400">Notes</p>
-                                    <p className="text-sm text-gray-900 dark:text-white mt-1">{order.notes}</p>
+                                    <p className="text-[10px] text-gray-500 dark:text-slate-400">Notes</p>
+                                    <p className="text-xs text-gray-900 dark:text-white mt-0.5 break-words">{order.notes}</p>
                                   </div>
                                 )}
                               </div>
@@ -686,6 +723,39 @@ const Orders: React.FC = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Shipping & Tracking */}
+              {(selectedOrder.shipping?.trackingNumber || selectedOrder.trackingNumber) && (
+                <div>
+                  <p className="text-sm font-semibold text-gray-500 dark:text-slate-400 mb-2">Shipping & Tracking</p>
+                  <div className="space-y-2 text-sm">
+                    <p className="text-gray-900 dark:text-white">
+                      <span className="font-semibold">Docket Number:</span> {selectedOrder.shipping?.trackingNumber || selectedOrder.trackingNumber}
+                    </p>
+                    {(selectedOrder.shipping?.carrier || selectedOrder.courierService) && (
+                      <p className="text-gray-600 dark:text-slate-400">
+                        <span className="font-semibold">Carrier:</span> {selectedOrder.shipping?.carrier || selectedOrder.courierService}
+                      </p>
+                    )}
+                    {selectedOrder.shipping?.eta && (
+                      <p className="text-gray-600 dark:text-slate-400">
+                        <span className="font-semibold">Estimated Delivery:</span> {selectedOrder.shipping.eta}
+                      </p>
+                    )}
+                    {selectedOrder.metadata?.sequelDocketPrint && (
+                      <a
+                        href={selectedOrder.metadata.sequelDocketPrint}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 dark:text-teal-400 mt-2"
+                      >
+                        <i className="fas fa-download"></i>
+                        Download Docket PDF
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Timeline */}
               <div>

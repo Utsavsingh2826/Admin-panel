@@ -4,7 +4,7 @@ import {
   getOrderById,
   updateOrderStatus,
 } from '../controllers/orderController';
-import { createShipment } from '../controllers/shipmentController';
+import { createShipment, trackShipment, trackMultipleShipments } from '../controllers/shipmentController';
 import { protect } from '../middleware/auth';
 import { authorize } from '../middleware/authorize';
 
@@ -18,6 +18,8 @@ router.get('/', getAllOrders);
 router.get('/:id', getOrderById);
 router.put('/:id/status', updateOrderStatus);
 router.post('/:id/create-shipment', createShipment);
+router.post('/track', trackShipment);
+router.post('/track-multiple', trackMultipleShipments);
 
 export default router;
 

@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import User from '../models/User';
+import AdminUser from '../models/AdminUser';
 
 dotenv.config();
 
@@ -10,25 +10,25 @@ const seedSuperAdmin = async () => {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/jewelry-admin');
     console.log('✅ Connected to MongoDB');
 
-    const email = 'utsavsingh2826@gmail.com';
-    const password = 'Utsav@1234';
+    const email = 'tiwariaditya1810@gmail.com';
+    const password = 'Aditya@1810';
 
     // Check if superadmin already exists and delete it to re-seed
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const existingUser = await AdminUser.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       console.log('⚠️  Superadmin user already exists!');
       console.log(`   Email: ${existingUser.email}`);
       console.log(`   Role: ${existingUser.role}`);
       console.log(`   ID: ${existingUser._id}`);
       console.log('🗑️  Deleting existing user to re-seed with correct password hash...');
-      await User.deleteOne({ _id: existingUser._id });
+      await AdminUser.deleteOne({ _id: existingUser._id });
       console.log('✅ Existing user deleted');
     }
 
-    // Create superadmin user (password will be hashed by User model's pre-save middleware)
+    // Create superadmin user (password will be hashed by AdminUser model's pre-save middleware)
     console.log('👤 Creating superadmin user...');
-    const user = await User.create({
-      name: 'Utsav',
+    const user = await AdminUser.create({
+      name: 'Aditya Tiwari',
       email: email.toLowerCase(),
       password: password, // Plain password - pre-save middleware will hash it
       role: 'superadmin',

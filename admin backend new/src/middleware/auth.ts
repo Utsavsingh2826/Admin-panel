@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import User from '../models/User';
+import AdminUser from '../models/AdminUser';
 import { ErrorResponse } from '../utils/errorResponse';
 import { AuthRequest, JwtPayload } from '../types';
 
@@ -32,8 +32,8 @@ export const protect = async (req: AuthRequest, _res: Response, next: NextFuncti
       return;
     }
 
-    // Get user from token
-    const user = await User.findById(decoded.id);
+    // Get admin user from token
+    const user = await AdminUser.findById(decoded.id);
 
     if (!user) {
       next(new ErrorResponse('User not found', 404));

@@ -2,11 +2,30 @@ import mongoose, { Schema, Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { IUser } from '../types';
 
+const AddressSchema = new Schema(
+  {
+    shippingAddress: {
+      sameAsBilling: {
+        type: Boolean,
+        default: false,
+      },
+    },
+  },
+  { _id: false }
+);
+
 const userSchema = new Schema<IUser>(
   {
+    firstName: {
+      type: String,
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      trim: true,
+    },
     name: {
       type: String,
-      required: [true, 'Name is required'],
       trim: true,
       maxlength: [50, 'Name cannot exceed 50 characters'],
     },
@@ -21,16 +40,73 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
     role: {
       type: String,
-      enum: ['superadmin', 'admin', 'manager', 'staff'],
-      default: 'staff',
-      required: true,
+      enum: ['superadmin', 'admin', 'manager', 'staff', 'customer'],
+      default: 'customer',
     },
+    address: AddressSchema,
+    orders: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Order',
+      },
+    ],
+    wishlist: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Product',
+      },
+    ],
+    gifts: [Schema.Types.Mixed],
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    availableOffers: {
+      type: Number,
+      default: 0,
+    },
+    referredBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    refDiscount: {
+      type: Number,
+      default: 0,
+    },
+    referralCount: {
+      type: Number,
+      default: 0,
+    },
+    totalReferralEarnings: {
+      type: Number,
+      default: 0,
+    },
+    usedPromoCodes: [Schema.Types.Mixed],
+    usedReferralCodes: [Schema.Types.Mixed],
+    lastLogin: {
+      type: Schema.Types.Mixed, // Can be Number (timestamp) or Date
+      default: null,
+    },
+    referralCode: {
+      type: String,
+      unique: true,
+      sparse: true, // Allow null/undefined values
+    },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    // Admin-specific fields (optional)
     twoFactorCode: {
       type: String,
       default: null,
@@ -39,10 +115,6 @@ const userSchema = new Schema<IUser>(
     twoFactorCodeExpires: {
       type: Date,
       default: null,
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
     },
     isLocked: {
       type: Boolean,
@@ -56,15 +128,12 @@ const userSchema = new Schema<IUser>(
       type: Date,
       default: null,
     },
-    lastLogin: {
-      type: Date,
-      default: null,
-    },
   },
   {
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
+    collection: 'users', // Explicitly set collection name
   }
 );
 
@@ -77,9 +146,10 @@ userSchema.virtual('isLockedVirtual').get(function () {
   return !!(this.lockUntil && this.lockUntil > new Date());
 });
 
-// Pre-save middleware to hash password
+// Pre-save middleware to hash password (only if password is provided and modified)
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  // Only hash password if it's provided and modified, and user is not a customer without password
+  if (!this.isModified('password') || !this.password) return next();
 
   try {
     const salt = await bcrypt.genSalt(12);
@@ -88,6 +158,20 @@ userSchema.pre('save', async function (next) {
   } catch (error: any) {
     next(error);
   }
+});
+
+// Pre-save middleware to generate name from firstName and lastName if name is not provided
+userSchema.pre('save', function (next) {
+  if (!this.name && (this.firstName || this.lastName)) {
+    this.name = `${this.firstName || ''} ${this.lastName || ''}`.trim();
+  }
+  // Also set firstName/lastName from name if they don't exist
+  if (this.name && !this.firstName && !this.lastName) {
+    const nameParts = this.name.split(' ');
+    this.firstName = nameParts[0] || '';
+    this.lastName = nameParts.slice(1).join(' ') || '';
+  }
+  next();
 });
 
 // Instance method to check password
