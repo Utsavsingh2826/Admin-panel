@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import { login, verify2FA, resend2FA, clearErrors } from '../../store/auth/actions';
+import { login, verify2FA, resend2FA, clearErrors, logout } from '../../store/auth/actions';
 import { RootState } from '../../store';
 
 const Login: React.FC = () => {
@@ -151,8 +151,10 @@ const Login: React.FC = () => {
             type="button"
             onClick={() => {
               setTwoFactorCode('');
+              setResendCooldown(0);
               dispatch(clearErrors());
-              window.location.reload(); // Reset to login form
+              dispatch(logout());
+              navigate('/login');
             }}
             className="mt-4 text-sm text-gray-600 hover:text-gray-800 transition-colors"
           >

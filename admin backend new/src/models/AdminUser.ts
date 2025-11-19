@@ -154,3 +154,4 @@ AdminUser.findByEmail = async function (email: string) {
 export default AdminUser;
 
 
+
